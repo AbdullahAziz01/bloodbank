@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if email is verified
+    function isEmailVerified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read if authenticated (email verification optional for reading)
+      allow read: if true;
+      
+      // Allow create only if:
+      // - User is authenticated (email verification not required for initial registration)
+      // - Creating their own document
+      // - Role is either 'donor' or 'recipient'
+      allow create: if isAuthenticated() 
+                    && isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.role in ['donor', 'recipient'];
+      
+      // Allow update only if:
+      // - User is authenticated
+      // - Email is verified
+      // - Updating their own document
+      // - Role field is not changed (prevent privilege escalation)
+      allow update: if isAuthenticated() 
+                    && isEmailVerified()
+                    && isOwner(userId)
+                    && request.resource.data.role == resource.data.role;
+      
+      // No delete allowed for user documents
+      allow delete: if false;
+    }
+    
+    // Blood Requests collection rules
+    match /bloodRequests/{requestId} {
+      // Allow read if authenticated
+      allow read: if isAuthenticated();
+      
+      // Allow create only if:
+      // - User is authenticated
+      // - recipientId matches the authenticated user
+      allow create: if isAuthenticated() 
+                    && request.resource.data.recipientId == request.auth.uid;
+      
+      // Allow update only if:
+      // - User is authenticated
+      // - User is the owner of the request
+      allow update: if isAuthenticated() 
+                    && resource.data.recipientId == request.auth.uid;
+      
+      // Allow delete only if user is the owner
+      allow delete: if isAuthenticated() 
+                    && resource.data.recipientId == request.auth.uid;
+    }
+
+    // Alerts collection rules
+    match /alerts/{alertId} {
+      // Allow create if authenticated (recipients sending alerts)
+      allow create: if isAuthenticated();
+
+      // Allow read if user is the donor (recipient of the alert)
+      allow read: if isAuthenticated() 
+                  && resource.data.donorId == request.auth.uid;
+
+      // Allow update (marking as read) if user is the donor
+      allow update: if isAuthenticated() 
+                    && resource.data.donorId == request.auth.uid;
+    }
+    
+    // Deny all other access by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

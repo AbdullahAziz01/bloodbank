@@ -3,6 +3,10 @@ import '../routes.dart';
 import '../theme.dart';
 import '../widgets/rounded_card.dart';
 import '../utils/localization.dart';
+import '../services/auth_service.dart';
+import '../services/theme_service.dart';
+// themeNotifier is now exposed by theme_service.dart
+
 
 /// User profile screen with settings
 class ProfileScreen extends StatefulWidget {
@@ -15,13 +19,36 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isDarkMode = false;
+  final AuthService _authService = AuthService();
+  final ThemeService _themeService = ThemeService();
+  Map<String, dynamic>? _userData;
   bool _isUrdu = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _isUrdu = Localization.currentLanguage == 'ur';
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      final data = await _authService.getUserData(user.uid);
+      if (mounted) {
+        setState(() {
+          _userData = data;
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _toggleLanguage() {
@@ -31,19 +58,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  void _toggleDarkMode() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-      // TODO: Implement dark mode theme switching
-      // TODO: Save preference to SharedPreferences or backend
-    });
+  Future<void> _toggleDarkMode(bool value) async {
+    final isDark = await _themeService.toggleTheme(); 
+    themeNotifier.value = isDark;
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Fetch real user data from Firestore
-    // TODO: Load user profile image
-    // TODO: Implement edit profile functionality
+    if (_isLoading) {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppTheme.gradientStart,
+                AppTheme.gradientEnd,
+              ],
+            ),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: Container(
@@ -80,14 +122,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.edit, color: Colors.white),
-                      onPressed: () {
-                        // TODO: Navigate to edit profile screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(Localization.get('editProfile')),
-                            backgroundColor: Colors.blue,
-                          ),
-                        );
+                      onPressed: () async {
+                        if (_userData != null) {
+                          debugPrint('Navigating to Edit Profile with data: $_userData');
+                          final result = await Navigator.of(context).pushNamed(
+                            AppRoutes.editProfile,
+                            arguments: _userData,
+                          );
+                          if (result == true) {
+                            debugPrint('Edit Profile returned true, reloading data...');
+                            _loadUserData();
+                          }
+                        } else {
+                          debugPrint('Cannot navigate to Edit Profile: _userData is null');
+                        }
                       },
                     ),
                   ],
@@ -96,9 +144,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Profile Card
               Expanded(
                 child: Container(
-                  decoration: const BoxDecoration(
-                    color: AppTheme.background,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
                     ),
@@ -106,6 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
                     child: Column(
+
                       children: [
                         // User Info Card
                         RoundedCard(
@@ -126,8 +175,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                'John Doe', // TODO: Replace with real name
-                                style: AppTheme.heading2,
+                                _userData?['name'] ?? 'User',
+                                style: Theme.of(context).textTheme.displayMedium,
                               ),
                               const SizedBox(height: 8),
                               Row(
@@ -140,8 +189,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'A+', // TODO: Replace with real blood group
-                                    style: AppTheme.bodyLarge.copyWith(
+                                    _userData?['bloodGroup'] ?? 'N/A',
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                       color: AppTheme.primaryRed,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -149,24 +198,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              Divider(color: AppTheme.borderColor),
+                              Divider(color: Theme.of(context).dividerColor),
                               const SizedBox(height: 16),
                               _buildInfoRow(
                                 Icons.location_on,
                                 Localization.get('city'),
-                                'Islamabad', // TODO: Replace with real city
+                                _userData?['city'] ?? 'Unknown',
                               ),
                               const SizedBox(height: 12),
                               _buildInfoRow(
                                 Icons.phone,
                                 Localization.get('phoneNumber'),
-                                '+92 300 1234567', // TODO: Replace with real phone
+                                _userData?['phone'] ?? 'N/A',
                               ),
                               const SizedBox(height: 12),
                               _buildInfoRow(
                                 Icons.email,
                                 Localization.get('email'),
-                                'user@example.com', // TODO: Replace with real email
+                                _userData?['email'] ?? 'N/A',
                               ),
                             ],
                           ),
@@ -179,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Text(
                                 'Settings',
-                                style: AppTheme.heading3,
+                                style: Theme.of(context).textTheme.displaySmall,
                               ),
                               const SizedBox(height: 20),
                               _buildSettingTile(
@@ -194,14 +243,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   activeThumbColor: AppTheme.primaryRed,
                                 ),
                               ),
-                              Divider(color: AppTheme.borderColor),
+                              Divider(color: Theme.of(context).dividerColor),
                               _buildSettingTile(
                                 icon: Icons.dark_mode,
                                 title: Localization.get('darkMode'),
                                 subtitle: 'Toggle dark theme',
                                 trailing: Switch(
-                                  value: _isDarkMode,
-                                  onChanged: (_) => _toggleDarkMode(),
+                                  value: Theme.of(context).brightness == Brightness.dark,
+                                  onChanged: _toggleDarkMode,
                                   activeThumbColor: AppTheme.primaryRed,
                                 ),
                               ),
@@ -213,26 +262,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         RoundedCard(
                           child: Column(
                             children: [
-                              ListTile(
-                                leading: const Icon(
-                                  Icons.edit,
-                                  color: AppTheme.primaryRed,
+                              if (widget.role == 'recipient') ...[
+                                ListTile(
+                                  leading: const Icon(
+                                    Icons.list_alt,
+                                    color: AppTheme.primaryRed,
+                                  ),
+                                  title: Text('My Requests', style: Theme.of(context).textTheme.bodyLarge),
+                                  trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Theme.of(context).iconTheme.color),
+                                  onTap: () {
+                                    Navigator.of(context).pushNamed(AppRoutes.myRequests);
+                                  },
                                 ),
-                                title: Text(Localization.get('editProfile')),
-                                trailing: const Icon(Icons.arrow_forward_ios,
-                                    size: 16),
-                                onTap: () {
-                                  // TODO: Navigate to edit profile screen
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content:
-                                          Text(Localization.get('editProfile')),
-                                      backgroundColor: Colors.blue,
-                                    ),
-                                  );
-                                },
-                              ),
-                              Divider(color: AppTheme.borderColor),
+                                Divider(color: Theme.of(context).dividerColor),
+                              ],
+                                ListTile(
+                                  leading: const Icon(
+                                    Icons.edit,
+                                    color: AppTheme.primaryRed,
+                                  ),
+                                  title: Text(Localization.get('editProfile'), style: Theme.of(context).textTheme.bodyLarge),
+                                  trailing: Icon(Icons.arrow_forward_ios,
+                                      size: 16, color: Theme.of(context).iconTheme.color),
+                                  onTap: () async {
+                                    if (_userData != null) {
+                                      final result = await Navigator.of(context).pushNamed(
+                                        AppRoutes.editProfile,
+                                        arguments: _userData,
+                                      );
+                                      if (result == true) {
+                                        _loadUserData(); // Reload data if updated
+                                      }
+                                    }
+                                  },
+                                ),
+                              Divider(color: Theme.of(context).dividerColor),
                               ListTile(
                                 leading: const Icon(
                                   Icons.logout,
@@ -242,11 +306,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   Localization.get('logout'),
                                   style: const TextStyle(color: Colors.red),
                                 ),
-                                onTap: () {
-                                  // TODO: Clear user session
-                                  // TODO: Sign out from Firebase
-                                  Navigator.of(context)
-                                      .pushNamedAndRemoveUntil(
+                                onTap: () async {
+                                  final navigator = Navigator.of(context);
+                                  await _authService.logout();
+                                  if (!mounted) return;
+                                  navigator.pushNamedAndRemoveUntil(
                                     AppRoutes.selectRole,
                                     (route) => false,
                                   );
@@ -271,7 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppTheme.textSecondary),
+        Icon(icon, size: 20, color: Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? Colors.grey),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -279,12 +343,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text(
                 label,
-                style: AppTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 4),
               Text(
                 value,
-                style: AppTheme.bodyLarge.copyWith(
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -303,11 +367,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return ListTile(
       leading: Icon(icon, color: AppTheme.primaryRed),
-      title: Text(title, style: AppTheme.bodyLarge),
-      subtitle: Text(subtitle, style: AppTheme.bodySmall),
+      title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
+      subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
       trailing: trailing,
       contentPadding: EdgeInsets.zero,
     );
   }
 }
-

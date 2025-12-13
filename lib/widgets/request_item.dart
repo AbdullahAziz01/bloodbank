@@ -13,6 +13,7 @@ class RequestItem extends StatelessWidget {
   final String hospital;
   final String note;
   final String timeAgo;
+  final String status;
   final VoidCallback? onContact;
 
   const RequestItem({
@@ -26,10 +27,13 @@ class RequestItem extends StatelessWidget {
     required this.hospital,
     required this.note,
     required this.timeAgo,
+    this.status = 'active',
     this.onContact,
   });
 
   Color _getUrgencyColor(String urgency) {
+    if (status == 'solved') return Colors.green;
+    
     switch (urgency.toLowerCase()) {
       case 'high':
         return Colors.red;
@@ -45,14 +49,22 @@ class RequestItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final urgencyColor = _getUrgencyColor(urgency);
+    final isSolved = status == 'solved';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.cardBackground,
+        color: isSolved ? (Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[200]) : Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.borderColor, width: 1),
+        border: Border.all(
+          color: isSolved 
+              ? Colors.grey 
+              : (Theme.of(context).cardTheme.shape is RoundedRectangleBorder 
+                  ? (Theme.of(context).cardTheme.shape as RoundedRectangleBorder).side.color 
+                  : AppTheme.borderColor),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -69,12 +81,12 @@ class RequestItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryRed.withOpacity(0.1),
+                  color: (isSolved ? Colors.grey : AppTheme.primaryRed).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Icons.local_hospital,
-                  color: AppTheme.primaryRed,
+                  isSolved ? Icons.check_circle : Icons.local_hospital,
+                  color: isSolved ? Colors.grey : AppTheme.primaryRed,
                   size: 24,
                 ),
               ),
@@ -84,8 +96,15 @@ class RequestItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      hospital,
-                      style: AppTheme.heading3,
+                      isSolved ? '$hospital (SOLVED)' : hospital,
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        color: isSolved ? Colors.grey[600] : null,
+                        decoration: isSolved ? TextDecoration.lineThrough : null,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -93,12 +112,16 @@ class RequestItem extends StatelessWidget {
                         Icon(
                           Icons.location_on,
                           size: 14,
-                          color: AppTheme.textSecondary,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          '$city • ${distanceKm.toStringAsFixed(1)} ${Localization.get('km')} ${Localization.get('away')}',
-                          style: AppTheme.bodySmall,
+                        Flexible(
+                          child: Text(
+                            '$city • ${distanceKm.toStringAsFixed(1)} ${Localization.get('km')} ${Localization.get('away')}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
                       ],
                     ),
@@ -108,12 +131,12 @@ class RequestItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: urgencyColor.withOpacity(0.1),
+                  color: urgencyColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  Localization.get(urgency.toLowerCase()),
-                  style: AppTheme.bodySmall.copyWith(
+                  isSolved ? 'SOLVED' : Localization.get(urgency.toLowerCase()),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: urgencyColor,
                     fontWeight: FontWeight.w600,
                   ),
@@ -141,7 +164,7 @@ class RequestItem extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       '$bloodGroup • $units ${Localization.get('units')}',
-                      style: AppTheme.bodyMedium.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.primaryRed,
                         fontWeight: FontWeight.w600,
                       ),
@@ -152,7 +175,7 @@ class RequestItem extends StatelessWidget {
               const Spacer(),
               Text(
                 timeAgo,
-                style: AppTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),
@@ -161,7 +184,9 @@ class RequestItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.background,
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.black 
+                    : AppTheme.background,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -169,13 +194,15 @@ class RequestItem extends StatelessWidget {
                   Icon(
                     Icons.note,
                     size: 16,
-                    color: AppTheme.textSecondary,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       note,
-                      style: AppTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ),
                 ],

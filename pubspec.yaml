@@ -36,7 +36,16 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.1.0
   flutter_svg: ^2.0.9
-  firebase_core: ^4.2.1
+  firebase_core: ^3.15.2
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.3
+  shared_preferences: ^2.3.2
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
+  firebase_messaging: ^15.2.10
+  permission_handler: ^11.0.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

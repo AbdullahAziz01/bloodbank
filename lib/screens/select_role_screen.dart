@@ -17,15 +17,8 @@ class _SelectRoleScreenState extends State<SelectRoleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFF5F5),
-              Color(0xFFF8F9FB),
-            ],
-          ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
         ),
         child: SafeArea(
           child: Align(
@@ -54,13 +47,13 @@ class _SelectRoleScreenState extends State<SelectRoleScreen> {
                   const SizedBox(height: 24),
                   Text(
                     Localization.get('appTitle'),
-                    style: AppTheme.heading1,
+                    style: Theme.of(context).textTheme.displayLarge,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     Localization.get('selectRole'),
-                    style: AppTheme.bodyLarge.copyWith(
-                      color: AppTheme.textSecondary,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                   ),
                   const SizedBox(height: 48),

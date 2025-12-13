@@ -31,9 +31,14 @@ class DonorItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.cardBackground,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.borderColor, width: 1),
+        border: Border.all(
+          color: Theme.of(context).cardTheme.shape is RoundedRectangleBorder 
+              ? (Theme.of(context).cardTheme.shape as RoundedRectangleBorder).side.color 
+              : AppTheme.borderColor,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -66,7 +71,12 @@ class DonorItem extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: AppTheme.heading3,
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -74,12 +84,16 @@ class DonorItem extends StatelessWidget {
                         Icon(
                           Icons.location_on,
                           size: 14,
-                          color: AppTheme.textSecondary,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          '$city • ${distanceKm.toStringAsFixed(1)} ${Localization.get('km')} ${Localization.get('away')}',
-                          style: AppTheme.bodySmall,
+                        Flexible(
+                          child: Text(
+                            '$city • ${distanceKm.toStringAsFixed(1)} ${Localization.get('km')} ${Localization.get('away')}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
                       ],
                     ),
@@ -96,7 +110,7 @@ class DonorItem extends StatelessWidget {
                 ),
                 child: Text(
                   Localization.get(isAvailable ? 'available' : 'notAvailable'),
-                  style: AppTheme.bodySmall.copyWith(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: isAvailable ? Colors.green : Colors.orange,
                     fontWeight: FontWeight.w600,
                   ),
@@ -124,7 +138,7 @@ class DonorItem extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       bloodGroup,
-                      style: AppTheme.bodyMedium.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.primaryRed,
                         fontWeight: FontWeight.w600,
                       ),
@@ -137,6 +151,8 @@ class DonorItem extends StatelessWidget {
                 child: Text(
                   '${Localization.get('lastDonation')}: $lastDonation',
                   style: AppTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
               if (onContact != null)

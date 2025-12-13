@@ -3,10 +3,14 @@ import 'screens/splash_screen.dart';
 import 'screens/select_role_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/forgot_password_screen.dart';
 import 'screens/donor_dashboard.dart';
 import 'screens/recipient_dashboard.dart';
 import 'screens/post_request_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/map_screen.dart';
+import 'screens/my_requests_screen.dart';
+import 'screens/edit_profile_screen.dart';
 
 /// App routing configuration with animated transitions
 class AppRoutes {
@@ -14,10 +18,14 @@ class AppRoutes {
   static const String selectRole = '/selectRole';
   static const String login = '/login';
   static const String register = '/register';
+  static const String forgotPassword = '/forgotPassword';
   static const String donorDashboard = '/donorDashboard';
   static const String recipientDashboard = '/recipientDashboard';
   static const String postRequest = '/postRequest';
   static const String profile = '/profile';
+  static const String map = '/map';
+  static const String myRequests = '/my-requests';
+  static const String editProfile = '/edit-profile';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     final args = settings.arguments;
@@ -47,6 +55,9 @@ class AppRoutes {
           settings,
         );
 
+      case forgotPassword:
+        return _buildRoute(const ForgotPasswordScreen(), settings);
+
       case donorDashboard:
         return _buildRoute(const DonorDashboard(), settings);
 
@@ -61,6 +72,16 @@ class AppRoutes {
           ProfileScreen(role: role ?? ''),
           settings,
         );
+
+      case map:
+        return _buildRoute(const MapScreen(), settings);
+
+      case myRequests:
+        return _buildRoute(const MyRequestsScreen(), settings);
+
+      case editProfile:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _buildRoute(EditProfileScreen(userData: args), settings);
 
       default:
         return _buildRoute(
@@ -98,4 +119,3 @@ class AppRoutes {
     );
   }
 }
-

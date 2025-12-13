@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../routes.dart';
 import '../theme.dart';
 import '../utils/localization.dart';
+import '../services/auth_service.dart';
 
 /// Splash screen with animated logo and auto-navigation
+/// Checks auth state and redirects accordingly
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -16,6 +19,7 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -41,12 +45,52 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Navigate to select role after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
+    // Check auth state and navigate accordingly
+    _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    // Wait for animation
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    try {
+      final user = _authService.currentUser;
+      if (user != null) {
+        // User is logged in, get their role and navigate to dashboard
+        try {
+          final userData = await _authService.getUserData(user.uid);
+          final role = userData?['role'] as String? ?? 'donor';
+          
+          if (mounted) {
+            final navigator = Navigator.of(context);
+            if (role == 'donor') {
+              navigator.pushReplacementNamed(AppRoutes.donorDashboard);
+            } else {
+              navigator.pushReplacementNamed(AppRoutes.recipientDashboard);
+            }
+          }
+        } catch (e) {
+          debugPrint('Error loading user data: $e');
+          // If error, go to select role
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed(AppRoutes.selectRole);
+          }
+        }
+      } else {
+        // User not logged in, go to select role
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.selectRole);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking auth state: $e');
+      // On any error, go to select role
       if (mounted) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.selectRole);
       }
-    });
+    }
   }
 
   @override

@@ -23,9 +23,14 @@ class RoundedCard extends StatelessWidget {
     return Container(
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppTheme.cardBackground,
+        color: backgroundColor ?? Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.borderColor, width: 1),
+        border: Border.all(
+          color: Theme.of(context).cardTheme.shape is RoundedRectangleBorder 
+              ? (Theme.of(context).cardTheme.shape as RoundedRectangleBorder).side.color 
+              : AppTheme.borderColor,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
